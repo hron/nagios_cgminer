@@ -22,18 +22,10 @@ module NagiosCgminer
       @critical &&= @critical.to_f
       @warning &&= @warning.to_f
 
-      socket = Socket.new Socket::AF_INET, Socket::SOCK_STREAM
-      socket.connect(Socket.pack_sockaddr_in(@cgminer_port, @cgminer_url))
-      socket.send(JSON.generate({command: "summary"}), 0)
-      message = ""
-      while (more = socket.recv(4096)) != ""
-        message += more
-      end
-      summary = JSON.parse(message.strip)
+      summary = do_command('summary')
 
       average_hashrate = summary['SUMMARY'][0]['MHS av'].to_f
-      pool = "Unknown"
-      message = "Speed: #{average_hashrate}; Pool: #{pool}"
+      message = "Speed: %.2d Gh/s" % (average_hashrate / 1000)
       if average_hashrate < @critical
         critical(message)
       elsif average_hashrate < @warning
@@ -43,8 +35,27 @@ module NagiosCgminer
       end
     end
 
+    private
+
     def cgminer_full_api_url
       "#{@cgminer_url}:#{@cgminer_port}"
+    end
+
+    def do_command(name)
+      socket.send(JSON.generate({command: name}), 0)
+      message = ""
+      while (more = socket.recv(4096)) != ""
+        message += more
+      end
+      JSON.parse(message.strip)
+    end
+
+    def socket
+      unless @socket
+        @socket = Socket.new Socket::AF_INET, Socket::SOCK_STREAM
+        @socket.connect(Socket.pack_sockaddr_in(@cgminer_port, @cgminer_url))
+      end
+      @socket
     end
   end
 end
