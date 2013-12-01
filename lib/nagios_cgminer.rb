@@ -1,5 +1,6 @@
 require 'nagios-plugin'
 require 'json'
+require 'socket'
 
 require "nagios_cgminer/version"
 
