@@ -1,0 +1,6 @@
+#! /usr/bin/env ruby
+
+require 'nagios_cgminer'
+
+plugin = NagiosCgminer::Plugin.new(shortname: 'Cgminer::Hashrate')
+plugin.run
