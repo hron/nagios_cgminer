@@ -23,9 +23,9 @@ module NagiosCgminer
       @critical &&= @critical.to_f
       @warning &&= @warning.to_f
 
-      summary = do_command('summary')
+      summary = do_command("summary")
 
-      average_hashrate = summary['SUMMARY'][0]['MHS av'].to_f
+      average_hashrate = summary['MHS av'].to_f
       message = "Speed: %.2d Gh/s" % (average_hashrate / 1000)
       if average_hashrate < @critical
         critical(message)
@@ -43,12 +43,17 @@ module NagiosCgminer
     end
 
     def do_command(name)
-      socket.send(JSON.generate({command: name}), 0)
+      socket.send(name, 0)
       message = ""
       while (more = socket.recv(4096)) != ""
         message += more
       end
-      JSON.parse(message.strip)
+      {}.tap do |result|
+        message.strip.split(',').each do |summary_string|
+          key, value = summary_string.split('=')
+          result[key] = value
+        end
+      end
     end
 
     def socket
